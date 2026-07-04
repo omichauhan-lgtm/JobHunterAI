@@ -1,0 +1,57 @@
+\documentclass[10pt, letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{letterpaper, margin=0.6in}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\setlist[itemize]{leftmargin=*, noitemsep, topsep=2pt}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+    \textbf{\LARGE \VAR{data.name}} \\
+    \vspace{2mm}
+    Email: \VAR{data.email} | Phone: \VAR{data.phone} | GitHub: \VAR{data.github} | LinkedIn: \VAR{data.linkedin}
+\end{center}
+
+\vspace{2mm}
+
+\textbf{\large Skills} \\
+\hrule \vspace{2mm}
+\begin{itemize}
+    \item \textbf{Languages}: \VAR{skills.Languages | join(', ')}
+    \item \textbf{Frameworks}: \VAR{skills.Frameworks | join(', ')}
+    \item \textbf{Databases}: \VAR{skills.Databases | join(', ')}
+    \item \textbf{Developer Tools / Other}: \VAR{skills.Tools | join(', ')}
+\end{itemize}
+
+\vspace{2mm}
+
+\textbf{\large Experience} \\
+\hrule \vspace{2mm}
+\BLOCK{ for exp in data.experiences }
+\textbf{\VAR{exp.company}} \hfill \VAR{exp.start_date} -- \VAR{exp.end_date} \\
+\textit{\VAR{exp.role}} \hfill \VAR{exp.org_type} \\
+\begin{itemize}
+\BLOCK{ for bullet in exp.bullets }
+    \item \VAR{bullet}
+\BLOCK{ endfor }
+\end{itemize}
+\vspace{2mm}
+\BLOCK{ endfor }
+
+\textbf{\large Projects} \\
+\hrule \vspace{2mm}
+\BLOCK{ for proj in data.projects }
+\textbf{\VAR{proj.name}} | \textit{\VAR{proj.skills | join(', ')}} \hfill \VAR{proj.category} \\
+\begin{itemize}
+\BLOCK{ for bullet in proj.description_bullets }
+    \item \VAR{bullet}
+\BLOCK{ endfor }
+\end{itemize}
+\vspace{2mm}
+\BLOCK{ endfor }
+
+\end{document}

@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases and environments
+*.db
+*.sqlite3
+.env
+
+# Generated assets and briefings
+JobHunterAI/data/generated/*
+!JobHunterAI/data/generated/.gitkeep
+
+# IDE settings
+.vscode/
+.idea/
