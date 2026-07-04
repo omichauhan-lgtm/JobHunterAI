@@ -25,9 +25,9 @@ def compute_job_score(job_jd: str, job_title: str, company_yc: bool, remote_stat
         if re.search(pattern, jd_lower):
             matched_skills += 1
             
-    if candidate_skills:
-        skill_ratio = matched_skills / len(candidate_skills)
-        score += skill_ratio * 50.0
+    # Scale matching score without penalizing extra candidate skills: 5+ matching skills gets 50 points
+    score += min(matched_skills, 5) / 5.0 * 50.0
+
     
     # 2. Remote Fit (up to 20 points)
     if remote_status.lower() == "remote":

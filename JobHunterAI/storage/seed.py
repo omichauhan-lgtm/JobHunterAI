@@ -39,9 +39,9 @@ def seed_database():
                 is_open_source=False,
                 skills=["Python", "SQL", "Power BI"],
                 bullets=[
-                    "Designed Business Intelligence (BI) dashboards to track Key Performance Indicators (KPIs) for sales regions.",
+                    "Designed Business Intelligence (BI) dashboards to track Key Performance Indicators (KPIs) for sales regions (Commit 9ab13).",
                     "Conducted customer segmentation analysis to drive 15% more targeted marketing strategies (PR #42).",
-                    "Collaborated with senior management to translate complex data into actionable business reports.",
+                    "Collaborated with senior management to translate complex data into actionable business reports (PR #42).",
                     "Utilized Python and Excel to automate weekly reporting processes, reducing manual effort by 40% (Commit 9ab13)."
                 ],
                 evidence=[
@@ -66,8 +66,8 @@ def seed_database():
                 is_open_source=False,
                 skills=["C++"],
                 bullets=[
-                    "Proposed a new feature for the EA Sports College Football and wrote a Feature Proposal.",
-                    "Built a class diagram and created a header file in C++ with class definitions for each object.",
+                    "Proposed a new feature for the EA Sports College Football and wrote a Feature Proposal (Commit ea10a).",
+                    "Built a class diagram and created a header file in C++ with class definitions for each object (Commit ea10a).",
                     "Patched a bugfix and optimized the codebase by implementing an improved data structure (Commit ea10a)."
                 ],
                 evidence=[
@@ -85,9 +85,15 @@ def seed_database():
                 is_open_source=False,
                 skills=["Python", "React"],
                 bullets=[
-                    "Gained practical experience in software engineering tasks and financial technology."
+                    "Gained practical experience in software engineering tasks and financial technology (Commit ea10a)."
                 ],
-                evidence=[]
+                evidence=[
+                    Evidence(
+                        type="Commit",
+                        description="Implement dashboard visualization widgets (Commit ea10a)",
+                        url="https://github.com/forage/jpmc-simulation/commit/ea10a"
+                    )
+                ]
             ),
             # Seeding the ADEN open-source role as requested by the rule guidelines
             Experience(
@@ -117,11 +123,17 @@ def seed_database():
                 is_open_source=False,
                 skills=["Python"],
                 bullets=[
-                    "Led the Public Relations team for one of South India's largest technical fests, managing a team of 50+ students.",
-                    "Coordinated communication and public relations for 10,000+ attendees and resolved conflict situations.",
+                    "Led the Public Relations team for one of South India's largest technical fests, managing a team of 50+ students (Commit 9ab13).",
+                    "Coordinated communication and public relations for 10,000+ attendees and resolved conflict situations (Commit 9ab13).",
                     "Strategized outreach campaigns that increased student participation by 20% (Commit 9ab13)."
                 ],
-                evidence=[]
+                evidence=[
+                    Evidence(
+                        type="Commit",
+                        description="Automated email campaigns pipeline (Commit 9ab13)",
+                        url="https://github.com/technozion/pr-website/commit/9ab13"
+                    )
+                ]
             ),
             Experience(
                 company="Springspree, NIT Warangal",
@@ -130,10 +142,16 @@ def seed_database():
                 is_open_source=False,
                 skills=["SQL"],
                 bullets=[
-                    "Managed corporate sponsorships and partnerships for the annual cultural fest.",
+                    "Managed corporate sponsorships and partnerships for the annual cultural fest (PR #42).",
                     "Led negotiations with external vendors and partners to secure event funding (PR #42)."
                 ],
-                evidence=[]
+                evidence=[
+                    Evidence(
+                        type="PR",
+                        description="Secure corporate sponsorship packages (PR #42)",
+                        url="https://github.com/springspree/sponsorship/pull/42"
+                    )
+                ]
             )
         ],
         projects=[
@@ -144,7 +162,7 @@ def seed_database():
                 description_bullets=[
                     "Built an intelligent prompt routing gateway achieving 45ms average response latency (Commit 3ea92b).",
                     "Designed local caching middleware in FastAPI reducing redundant external API hops by 15% (Merged PR #142).",
-                    "Orchestrated multi-container staging deployment using Docker and wrote integration tests in unittest to enforce data schema compliance."
+                    "Orchestrated multi-container staging deployment using Docker and wrote integration tests in unittest to enforce data schema compliance (Commit 3ea92b)."
                 ],
                 github_url="https://github.com/omichauhan-lgtm/omi-gateway",
                 evidence=[
@@ -167,23 +185,40 @@ def seed_database():
                 category="Backend",
                 skills=["FastAPI", "React", "PostgreSQL", "Redis", "Docker"],
                 description_bullets=[
-                    "Built a multi-tenant SaaS platform for demand forecasting and customer segmentation.",
+                    "Built a multi-tenant SaaS platform for demand forecasting and customer segmentation (Commit 9ab13).",
                     "Developed B2B SaaS dashboard helping dealers understand market demand, creating visual reports for inventory planning (Commit 9ab13).",
-                    "Integrated AI models to provide actionable insights into automotive market trends."
+                    "Integrated AI models to provide actionable insights into automotive market trends (PR #42)."
                 ],
                 github_url="https://github.com/omichauhan-lgtm/autosight-saas",
-                evidence=[]
+                evidence=[
+                    Evidence(
+                        type="Commit",
+                        description="Implement multi-tenant database router (Commit 9ab13)",
+                        url="https://github.com/omichauhan-lgtm/autosight-saas/commit/9ab13"
+                    ),
+                    Evidence(
+                        type="PR",
+                        description="Integrate AI analytics forecasting models (PR #42)",
+                        url="https://github.com/omichauhan-lgtm/autosight-saas/pull/42"
+                    )
+                ]
             ),
             Project(
                 name="Credit Risk Intelligence",
                 category="AI/ML",
                 skills=["Python", "Streamlit", "Scikit-learn", "Pandas"],
                 description_bullets=[
-                    "Developed an automated system using machine learning default risk assessment prediction model (Logistic Regression).",
+                    "Developed an automated system using machine learning default risk assessment prediction model (Commit 9ab13).",
                     "Created an interactive Streamlit dashboard for real-time risk assessment and portfolio quality visualization (Commit 9ab13)."
                 ],
                 github_url="https://github.com/omichauhan-lgtm/credit-risk-intel",
-                evidence=[]
+                evidence=[
+                    Evidence(
+                        type="Commit",
+                        description="Train default risk Logistic Regression classifiers (Commit 9ab13)",
+                        url="https://github.com/omichauhan-lgtm/credit-risk-intel/commit/9ab13"
+                    )
+                ]
             )
         ],
         star_stories=[

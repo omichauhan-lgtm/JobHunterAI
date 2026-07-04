@@ -259,9 +259,9 @@ def run_daily_autonomous_loop(db: Session) -> dict:
     processed_count = 0
     matched_count = 0
     
-    for job in new_jobs:
-        if job.status != "discovered":
-            continue
+    discovered_jobs = db.query(JobOpportunityTable).filter(JobOpportunityTable.status == "discovered").all()
+    for job in discovered_jobs:
+
             
         # Get company intelligence
         company_profile = run_company_intelligence(job.company_name, job.jd_text)

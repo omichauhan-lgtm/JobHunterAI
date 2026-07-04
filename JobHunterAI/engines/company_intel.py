@@ -28,7 +28,19 @@ def run_company_intelligence(company_name: str, jd_text: str) -> CompanyProfile:
                 recent_news="Launched open-source LLM prompt routing gateway.",
                 products=["ADEN Router", "ADEN Agent Hub"]
             )
+        elif "vectorshift" in name_lower:
+            return CompanyProfile(
+                name="VectorShift",
+                funding_stage="Early Stage (Seed)",
+                funding_amount="$3M",
+                investors=["Y Combinator", "Sequoia Capital"],
+                is_yc=True,
+                tech_stack=["Python", "FastAPI", "React", "Docker", "PostgreSQL", "LLM Routing"],
+                recent_news="Launched automated LLM pipeline and vector search orchestrator.",
+                products=["VectorShift Platform", "Agent Studio"]
+            )
         else:
+
             return CompanyProfile(
                 name=company_name,
                 funding_stage="Private / Early Stage",
