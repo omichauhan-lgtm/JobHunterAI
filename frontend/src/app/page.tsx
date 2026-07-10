@@ -13,7 +13,7 @@ export default function Home() {
           <span className="text-xl font-black uppercase tracking-wider">JobHunterAI</span>
         </div>
         <Link
-          href="/dashboard"
+          href="/login"
           className="bg-black text-white font-black px-6 py-2 border-2 border-black hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] transition-all text-sm"
         >
           Open App 🚀
@@ -34,7 +34,7 @@ export default function Home() {
         
         {/* Claymorphic Button */}
         <Link
-          href="/dashboard"
+          href="/login"
           className="mt-10 bg-[#4F46E5] text-white font-black text-lg px-8 py-4 border-4 border-black rounded-full shadow-[inset_0_4px_4px_rgba(255,255,255,0.4),_6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] hover:bg-[#4338CA] transition-all"
         >
           Get Started &bull; Launch Dashboard
@@ -99,7 +99,7 @@ export default function Home() {
           </p>
           <div className="text-5xl font-black my-6">$0</div>
           <Link
-            href="/dashboard"
+            href="/login"
             className="block bg-black text-white font-black py-3 border-2 border-black hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] transition-all text-sm uppercase"
           >
             Launch Free Account
