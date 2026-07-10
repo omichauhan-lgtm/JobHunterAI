@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: jobhunter_web
+    ports:
+      - "8501:8501"
+    volumes:
+      - candidate_data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JOB_APPLY_THRESHOLD=${JOB_APPLY_THRESHOLD}
+      - DEFAULT_RESUME_TEMPLATE=${DEFAULT_RESUME_TEMPLATE}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+    restart: always
+
+  worker:
+    build: .
+    container_name: jobhunter_worker
+    volumes:
+      - candidate_data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JOB_APPLY_THRESHOLD=${JOB_APPLY_THRESHOLD}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+    # Command runs the daily autonomous loop in the container
+    entrypoint: ["python", "main.py", "--daily-loop"]
+
+volumes:
+  candidate_data:
