@@ -126,49 +126,113 @@ def discover_job_from_url(db: Session, url: str) -> JobOpportunityTable:
     )
     return save_job_opportunity(db, db_job)
 
+def discover_arbeitnow_jobs(db: Session) -> list:
+    """Fetch and ingest real remote software engineering jobs from Arbeitnow public API."""
+    import urllib.request
+    import json
+    
+    url = "https://www.arbeitnow.com/api/job-board-api"
+    try:
+        logger.info("Querying Arbeitnow API for live remote engineering roles...")
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            jobs_list = res_data.get("data", [])
+            
+            db_jobs = []
+            for j in jobs_list:
+                title = j.get("title", "Software Engineer")
+                company = j.get("company_name", "Unknown Company")
+                description = clean_html(j.get("description", ""))
+                job_url = j.get("url", "")
+                tags = j.get("tags", [])
+                
+                # Filter for target developer roles
+                keywords = ["engineer", "developer", "software", "backend", "fullstack", "data", "analytics", "ai", "machine learning"]
+                if not any(k in title.lower() for k in keywords):
+                    continue
+                    
+                # Ensure remote
+                is_remote = j.get("remote", False) or "remote" in title.lower() or "remote" in description.lower()
+                if not is_remote:
+                    continue
+                
+                # Deduplicate
+                existing = db.query(JobOpportunityTable).filter(JobOpportunityTable.url == job_url).first()
+                if existing:
+                    continue
+                    
+                db_job = JobOpportunityTable(
+                    title=title,
+                    company_name=company,
+                    jd_text=description,
+                    url=job_url,
+                    source="Arbeitnow API",
+                    remote_status="Remote",
+                    tech_stack_json=json.dumps(tags),
+                    status="discovered"
+                )
+                
+                # Dynamic scoring
+                from engines.ranking import compute_job_score
+                from storage.crud import get_candidate
+                candidate = get_candidate(db, 1)
+                if candidate:
+                    skills_list = [s.name for s in candidate.skills]
+                    score = compute_job_score(
+                        db_job.jd_text,
+                        db_job.title,
+                        False,
+                        db_job.remote_status,
+                        skills_list
+                    )
+                    db_job.overall_score = score
+                else:
+                    db_job.overall_score = 50
+                    
+                saved = save_job_opportunity(db, db_job)
+                db_jobs.append(saved)
+                
+            logger.info(f"Arbeitnow Scraper complete. Ingested {len(db_jobs)} matching remote tech roles.")
+            return db_jobs
+    except Exception as e:
+        logger.error(f"Failed to scrape Arbeitnow API: {e}")
+        return []
+
 def run_mock_discovery(db: Session) -> list:
-    """Generate high-quality mock opportunities for testing and demonstration."""
+    """Run real API discovery first, and fallback to mock list for demo robustness."""
+    real_jobs = discover_arbeitnow_jobs(db)
+    if real_jobs:
+        return real_jobs
+        
+    # Mock fallback
     mock_jobs = [
         {
             "title": "Senior Backend Engineer",
             "company_name": "Stripe",
             "jd_text": """
-            We are looking for a Senior Backend Engineer to join our core payments infrastructure team.
-            Requirements:
-            - 5+ years of experience building highly available, distributed systems.
-            - Deep experience with Python, FastAPI, and PostgreSQL database optimizations.
-            - Hands-on knowledge of Docker containers and Kubernetes orchestration.
-            - Strong track record of designing latency-sensitive transaction gateways.
-            - Familiarity with prompt routing and LLM infrastructures is a major plus.
-            - Location: Remote
+            We are looking for a Senior Backend Engineer to join our payments infra team.
+            Requirements: FastAPI, Python, PostgreSQL, Docker, Kubernetes, prompt routing.
             """,
             "url": "https://jobs.lever.co/stripe/senior-backend-engineer",
             "source": "Lever",
             "remote_status": "Remote",
             "salary_range": "$160,000 - $210,000",
             "tech_stack": ["Python", "FastAPI", "PostgreSQL", "Docker", "LLM Routing"]
-        },
-        {
-            "title": "Full Stack Developer",
-            "company_name": "Y Combinator Startup",
-            "jd_text": """
-            Build the next generation AI coding assistant.
-            Requirements:
-            - React, TypeScript, FastAPI backend development.
-            - Experience contributing to open-source software libraries.
-            - Familiarity with YC workflows and fast-paced engineering environments.
-            - Location: Hybrid
-            """,
-            "url": "https://boards.greenhouse.io/ycstartup/fullstack-developer",
-            "source": "Greenhouse",
-            "remote_status": "Hybrid",
-            "salary_range": "$120,000 - $150,000 + Equity",
-            "tech_stack": ["React", "FastAPI", "Python"]
         }
     ]
     
     db_jobs = []
     for job in mock_jobs:
+        # Deduplicate
+        existing = db.query(JobOpportunityTable).filter(JobOpportunityTable.url == job["url"]).first()
+        if existing:
+            db_jobs.append(existing)
+            continue
+            
         db_job = JobOpportunityTable(
             title=job["title"],
             company_name=job["company_name"],
@@ -184,3 +248,4 @@ def run_mock_discovery(db: Session) -> list:
         db_jobs.append(saved)
         
     return db_jobs
+
