@@ -1,0 +1,40 @@
+services:
+  # JobHunterAI FastAPI Backend API Server
+  - type: web
+    name: jobhunterai-api
+    env: python
+    buildCommand: pip install -r JobHunterAI/requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    rootDir: JobHunterAI
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: RECIPIENT_EMAIL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # JobHunterAI Next.js Frontend Dashboard (can also be deployed on Vercel)
+  - type: web
+    name: jobhunterai-frontend
+    env: web
+    buildCommand: npm run build
+    startCommand: npm start
+    rootDir: frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://jobhunterai-api.onrender.com
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
