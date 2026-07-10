@@ -1,9 +1,13 @@
 import os
+import csv
+import io
 import smtplib
 import datetime
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 from pathlib import Path
 from sqlalchemy.orm import Session
 from storage.db import JobOpportunityTable, ApplicationTable, ResumeVariantTable
@@ -56,6 +60,43 @@ def get_job_funnel_stats(db: Session) -> dict:
         "interview_rate": interview_rate,
         "trending_skills": trending_labels if trending_labels else ["Kubernetes", "AWS", "Terraform"]
     }
+
+def generate_csv_report(db: Session) -> bytes:
+    """Compiles all opportunities in the DB into a CSV byte string."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    # Write headers
+    writer.writerow([
+        "Company", "Role", "Location", "Remote Status", 
+        "Match Score", "Salary", "Source", "Direct Application Link", 
+        "Notes", "Status"
+    ])
+    
+    # Query all jobs
+    jobs = db.query(JobOpportunityTable).order_by(JobOpportunityTable.overall_score.desc()).all()
+    for j in jobs:
+        remote_val = j.remote_status or "Unknown"
+        score_val = f"{j.overall_score}%" if j.overall_score is not None else "N/A"
+        salary_val = j.salary_range or "N/A"
+        
+        # Clean JD snippet for notes
+        notes = (j.jd_text[:120].strip() + "...") if j.jd_text else ""
+        clean_notes = notes.replace("\n", " ").replace("\r", "").replace(",", ";")
+        
+        writer.writerow([
+            j.company_name,
+            j.title,
+            "Remote" if remote_val.lower() == "remote" else "Onsite/Hybrid",
+            remote_val,
+            score_val,
+            salary_val,
+            j.source or "Manual",
+            j.url or "",
+            clean_notes,
+            j.status
+        ])
+        
+    return output.getvalue().encode("utf-8")
 
 def generate_html_report(db: Session) -> str:
     """Compiles dashboard analytics into a premium responsive HTML brief template."""
@@ -138,9 +179,9 @@ def generate_html_report(db: Session) -> str:
                 
                 <div class="section-title">Today's Action Items</div>
                 <ul style="padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.6;">
-                    <li>Review the <strong>{stats['pending_review']}</strong> applications pending in your Streamlit approval queue.</li>
-                    <li>Update recruiter communications log in CRM dashboard.</li>
+                    <li>Review the <strong>{stats['pending_review']}</strong> applications pending in your approval queue.</li>
                     <li>Verify cover letter formulations and click "Submit Application" to mark as applied.</li>
+                    <li>Inspect the attached CSV spreadsheet for a detailed breakdown of all listings.</li>
                 </ul>
                 
                 <a href="http://localhost:8501" class="btn">Open CRM Dashboard</a>
@@ -155,8 +196,9 @@ def generate_html_report(db: Session) -> str:
     return html
 
 def send_daily_briefing(db: Session) -> bool:
-    """Generates HTML report and delivers it via SMTP (or writes file locally as offline fallback)."""
+    """Generates HTML report, compiles CSV spreadsheet, and delivers them via SMTP."""
     html_content = generate_html_report(db)
+    csv_content = generate_csv_report(db)
     
     # Read environment configs
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -169,19 +211,27 @@ def send_daily_briefing(db: Session) -> bool:
     smtp_pass = os.getenv("SMTP_PASSWORD")
     recipient = os.getenv("RECIPIENT_EMAIL", smtp_user)
     
-    today_filename = f"daily_briefing_{datetime.date.today().strftime('%Y_%m_%d')}.html"
-    report_file_path = GEN_DIR / today_filename
+    today_str = datetime.date.today().strftime('%Y_%m_%d')
+    today_html_filename = f"daily_briefing_{today_str}.html"
+    today_csv_filename = f"job_listings_{today_str}.csv"
     
-    # Save a local record anyway for archiving
+    report_file_path = GEN_DIR / today_html_filename
+    csv_file_path = GEN_DIR / today_csv_filename
+    
+    # Save a local record for archiving
     try:
         with open(report_file_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        logger.info(f"Daily briefing archive saved to: {report_file_path}")
+        logger.info(f"Daily briefing HTML saved to: {report_file_path}")
+        
+        with open(csv_file_path, "wb") as f:
+            f.write(csv_content)
+        logger.info(f"Daily listings CSV saved to: {csv_file_path}")
     except Exception as e:
-        logger.error(f"Failed to write local briefing archive: {e}")
+        logger.error(f"Failed to write local briefing archives: {e}")
         
     if not (smtp_user and smtp_pass and recipient):
-        logger.warning("SMTP credentials or recipient email missing from environment. Written to local file only (Offline Mode).")
+        logger.warning("SMTP credentials or recipient email missing from environment. Written to local files only (Offline Mode).")
         return False
         
     # Attempt SMTP transmission
@@ -189,24 +239,36 @@ def send_daily_briefing(db: Session) -> bool:
     for attempt in range(1, max_retries + 1):
         try:
             logger.info(f"Attempting to send daily brief email (Attempt {attempt}/{max_retries})...")
-            msg = MIMEMultipart("alternative")
+            msg = MIMEMultipart("mixed")
             msg["Subject"] = f"JobHunterAI Daily Career Report — {datetime.date.today().strftime('%d %B')}"
             msg["From"] = smtp_user
             msg["To"] = recipient
             
-            part = MIMEText(html_content, "html")
-            msg.attach(part)
+            # Attach HTML Body
+            body_part = MIMEText(html_content, "html")
+            msg.attach(body_part)
+            
+            # Attach CSV Spreadsheet
+            csv_part = MIMEBase("application", "octet-stream")
+            csv_part.set_payload(csv_content)
+            encoders.encode_base64(csv_part)
+            csv_part.add_header(
+                "Content-Disposition",
+                f"attachment; filename={today_csv_filename}"
+            )
+            msg.attach(csv_part)
             
             with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
                 server.starttls()
                 server.login(smtp_user, smtp_pass)
                 server.sendmail(smtp_user, recipient, msg.as_string())
                 
-            logger.info("Daily brief email delivered successfully!")
+            logger.info("Daily brief email with CSV attachment delivered successfully!")
             return True
         except Exception as e:
             logger.warning(f"SMTP delivery attempt {attempt} failed: {e}")
             if attempt == max_retries:
-                logger.error("All email delivery attempts failed. Falling back to local file brief.")
+                logger.error("All email delivery attempts failed. Falling back to local files.")
                 
     return False
+
