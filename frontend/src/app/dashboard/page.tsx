@@ -4,6 +4,9 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import StatsGrid from "@/components/StatsGrid";
 import MatchQueue from "@/components/MatchQueue";
+import AnalyticsView from "@/components/AnalyticsView";
+import CRMTracker from "@/components/CRMTracker";
+import GraphExplorer from "@/components/GraphExplorer";
 
 export default function Dashboard() {
   const [selectedTab, setSelectedTab] = useState("queue");
@@ -189,12 +192,18 @@ export default function Dashboard() {
           </div>
         )}
 
-        {selectedTab !== "queue" && (
+        {selectedTab === "analytics" && <AnalyticsView />}
+
+        {selectedTab === "crm" && <CRMTracker />}
+
+        {selectedTab === "graph" && <GraphExplorer />}
+
+        {selectedTab === "settings" && (
           <section className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex-1 flex flex-col items-center justify-center text-center">
-            <span className="text-5xl">🚧</span>
-            <h3 className="text-xl font-black uppercase mt-4">Module under active construction</h3>
+            <span className="text-5xl">⚙️</span>
+            <h3 className="text-xl font-black uppercase mt-4">Settings & Integrations</h3>
             <p className="text-sm text-gray-600 mt-2 max-w-sm">
-              The presentation pages are being integrated into Next.js. Expose existing APIs to render this data.
+              Manage API keys, Gmail SMTP credentials, and cron job parameters directly inside the cloud environment.
             </p>
           </section>
         )}
