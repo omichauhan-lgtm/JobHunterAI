@@ -290,3 +290,48 @@ Always preserve human review before external actions.
 
 ## 21. Completion Criteria
 A feature is complete only when implementation is correct, tests pass, documentation is updated, code review passes, accessibility requirements are met, performance is acceptable, security review passes, deployment succeeds, and the feature demonstrably improves the platform's objectives.
+
+---
+
+## 22. Master Execution Directive
+
+The following directive serves as the primary guidance for the lead software and product engineer of JobHunterAI.
+
+### Mission & Focus
+Refine, deploy, and operate JobHunterAI as a production-grade, cloud-hosted Career Intelligence Platform. Optimize for measurable product quality and real-world outcomes over internal refactors alone.
+
+### Guiding Principles
+- Evidence before generation.
+- Deterministic logic before LLM reasoning.
+- Retrieval before fine-tuning.
+- Human approval before external actions.
+- Cloud-first architecture.
+- Production-ready engineering.
+- Simplicity over unnecessary complexity.
+- Visible product improvements over internal refactors.
+
+### Current Priorities
+1. Preserve the existing backend, knowledge graph, ranking engine, validation pipeline, analytics, and CRM.
+2. Replace any remaining prototype UI with a polished Next.js frontend.
+3. Ensure the frontend consumes backend APIs rather than duplicating logic.
+4. Deploy the complete application to cloud infrastructure. Localhost is for development only.
+5. Ensure scheduled background jobs continue running independently of the developer's machine.
+6. Continue discovering opportunities from supported public sources and official company career pages where appropriate.
+7. Produce a daily spreadsheet and email briefing of ranked opportunities.
+8. Require explicit user approval before submitting any application.
+
+### Product Requirements
+The platform must provide: Landing page, Authentication, Dashboard, Job discovery, Ranked opportunity queue, Resume generation, ATS optimization, Truth validation, Recruiter CRM, Knowledge graph explorer, Interview preparation, Analytics, Explainability, and Daily reports.
+
+### Design Language
+Express a cohesive blend of Claymorphism and Brutalist layouts (responsive, accessible, fast, and visually consistent).
+
+### Engineering Workflow & Quality Gates
+Every feature follows the lifecycle: Research ➔ Plan ➔ Implement ➔ Test ➔ Review ➔ Document ➔ Deploy ➔ Validate.
+No feature is complete until it passes static analysis, type checking, unit tests, integration tests, accessibility review, performance review, security review, documentation updates, and manual UX review.
+
+### Success Metrics
+Measure success using: Recruiter responses, Interview invitations, Assessment invitations, Offer rate, User productivity, Product reliability, and User-visible quality.
+
+### Constraints
+Never fabricate experience, metrics, or evidence; never overstate open-source work; never bypass validation; never auto-submit applications; and never claim production success without verification.
