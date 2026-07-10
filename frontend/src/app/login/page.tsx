@@ -19,11 +19,13 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      sessionStorage.removeItem("devBypass");
       router.push("/dashboard");
     } catch (err: any) {
       console.warn("Firebase email login failed, triggering local development fallback:", err.message);
       // Local developer fallback to allow logging in with any details when offline
       if (email && password) {
+        sessionStorage.setItem("devBypass", "true");
         alert("Developer mode bypass: Logged in successfully!");
         router.push("/dashboard");
       } else {
@@ -40,9 +42,11 @@ export default function Login() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      sessionStorage.removeItem("devBypass");
       router.push("/dashboard");
     } catch (err: any) {
       console.warn("Firebase Google authentication failed, bypassing for development:", err.message);
+      sessionStorage.setItem("devBypass", "true");
       alert("Developer mode bypass: Logged in using Google mock account.");
       router.push("/dashboard");
     } finally {

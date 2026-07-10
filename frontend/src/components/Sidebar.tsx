@@ -1,4 +1,7 @@
 import React from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
   selectedTab: string;
@@ -7,6 +10,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ selectedTab, setSelectedTab, pendingCount }: SidebarProps) {
+  const router = useRouter();
+  
   const tabs = [
     { id: "queue", label: "📋 Match Queue", count: pendingCount },
     { id: "analytics", label: "📊 Analytics", count: 0 },
@@ -14,6 +19,17 @@ export default function Sidebar({ selectedTab, setSelectedTab, pendingCount }: S
     { id: "graph", label: "🕸️ Knowledge Graph", count: 0 },
     { id: "settings", label: "⚙️ Settings", count: 0 }
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (err) {
+      console.warn("Firebase sign out failed, routing to login directly:", err);
+      // Ensure development mode bypass fallback
+      router.push("/login");
+    }
+  };
 
   return (
     <aside className="w-full md:w-80 bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
@@ -42,6 +58,13 @@ export default function Sidebar({ selectedTab, setSelectedTab, pendingCount }: S
             </button>
           ))}
         </nav>
+        
+        <button
+          onClick={handleSignOut}
+          className="mt-6 flex items-center justify-center gap-2 w-full p-2.5 font-bold border-2 border-black text-red-600 bg-red-50 hover:bg-red-100 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-xs uppercase"
+        >
+          🚪 Sign Out
+        </button>
       </div>
       <div className="mt-8 pt-6 border-t-2 border-black text-xs font-semibold text-gray-600">
         V11 Cloud Active &bull; omichauhan427@gmail.com

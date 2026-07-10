@@ -7,11 +7,29 @@ import MatchQueue from "@/components/MatchQueue";
 import AnalyticsView from "@/components/AnalyticsView";
 import CRMTracker from "@/components/CRMTracker";
 import GraphExplorer from "@/components/GraphExplorer";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const [selectedTab, setSelectedTab] = useState("queue");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+  const router = useRouter();
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      const devBypass = sessionStorage.getItem("devBypass") === "true";
+      if (!currentUser && !devBypass) {
+        console.log("Unauthenticated user redirected to login.");
+        router.push("/login");
+      } else {
+        setAuthLoading(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
   
   const [matchedJobs, setMatchedJobs] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -156,6 +174,16 @@ export default function Dashboard() {
   };
 
   const pendingJobs = matchedJobs.filter(j => j.status === "discovered");
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F0EBE1] text-black font-sans flex items-center justify-center">
+        <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center font-bold text-lg">
+          🔒 Verifying Client Session...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F0EBE1] text-black font-sans p-6 md:p-12 flex flex-col md:flex-row gap-8">
