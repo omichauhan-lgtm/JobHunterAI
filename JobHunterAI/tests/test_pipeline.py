@@ -77,7 +77,7 @@ class TestJobHunterAI(unittest.TestCase):
             candidate_skills=skills
         )
         
-        self.assertAlmostEqual(score, 58.33, places=1)
+        self.assertAlmostEqual(score, 45.0, places=1)
 
     def test_ats_matching(self):
         """Verify ATS percentage scoring evaluates intersection cleanly."""

@@ -1,6 +1,6 @@
 import json
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from storage.db import ApplicationTable, JobOpportunityTable, ResumeVariantTable
 
 def get_detailed_analytics(db: Session) -> dict:
@@ -34,13 +34,14 @@ def get_detailed_analytics(db: Session) -> dict:
         ResumeVariantTable.resume_type,
         func.count(ApplicationTable.id).label("total"),
         func.sum(
-            func.case(
+            case(
                 (ApplicationTable.status.in_(["OA", "Interview", "Offer"]), 1),
                 else_=0
             )
         ).label("converted")
     ).join(ApplicationTable, ResumeVariantTable.id == ApplicationTable.resume_variant_id)\
      .group_by(ResumeVariantTable.resume_type).all()
+
      
     template_perf = {}
     for row in template_stats:
