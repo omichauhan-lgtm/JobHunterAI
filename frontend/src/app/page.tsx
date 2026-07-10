@@ -1,296 +1,142 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
-import StatsGrid from "@/components/StatsGrid";
-import MatchQueue from "@/components/MatchQueue";
+import React from "react";
+import Link from "next/link";
 
 export default function Home() {
-  const [selectedTab, setSelectedTab] = useState("queue");
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<any>(null);
-  
-  const [matchedJobs, setMatchedJobs] = useState<any[]>([]);
-  const [stats, setStats] = useState({
-    totalJobs: 0,
-    matchedCount: 0,
-    pendingCount: 0,
-    conversionRate: "0.0%",
-  });
-  const [loading, setLoading] = useState(true);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewDetails, setReviewDetails] = useState<any>(null);
-
-  // Expose backend API URL with fallback configuration
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      // 1. Fetch Funnel Metrics
-      const statsRes = await fetch(`${API_BASE}/api/stats`);
-      let fetchedStats = {
-        totalJobs: 362,
-        matchedCount: 3,
-        pendingCount: 3,
-        conversionRate: "0.0%",
-      };
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        fetchedStats = {
-          totalJobs: statsData.total_jobs || 0,
-          matchedCount: statsData.matched_jobs || 0,
-          pendingCount: statsData.pending_review || 0,
-          conversionRate: `${statsData.interview_rate}%`,
-        };
-      }
-      setStats(fetchedStats);
-
-      // 2. Fetch Match Queue
-      const jobsRes = await fetch(`${API_BASE}/api/jobs`);
-      if (jobsRes.ok) {
-        const jobsData = await jobsRes.json();
-        // Keep pending review jobs at the top
-        setMatchedJobs(jobsData);
-      } else {
-        throw new Error("Jobs API failed");
-      }
-    } catch (err) {
-      console.warn("Backend API offline, falling back to mock data:", err);
-      // Resilient Fallback to mock data for layout demonstration
-      setMatchedJobs([
-        {
-          id: 1,
-          company: "LangChain",
-          title: "AI Integration Engineer",
-          score: 90,
-          salary: "$140,000 - $180,000",
-          remote: "Remote",
-          template: "ai.tex",
-          source: "Lever",
-          link: "https://boards.lever.co/langchain/ai-engineer",
-          status: "discovered"
-        },
-        {
-          id: 2,
-          company: "LiteLLM",
-          title: "Founding AI Platform Engineer",
-          score: 80,
-          salary: "$120,000 - $160,000",
-          remote: "Remote",
-          template: "backend.tex",
-          source: "YC Jobs",
-          link: "https://www.workatastartup.com/companies/litellm/jobs",
-          status: "discovered"
-        },
-        {
-          id: 3,
-          company: "Supabase",
-          title: "Backend Systems Engineer",
-          score: 80,
-          salary: "$130,000 - $170,000",
-          remote: "Remote",
-          template: "backend.tex",
-          source: "Greenhouse",
-          link: "https://boards.greenhouse.io/supabase/backend-engineer",
-          status: "discovered"
-        }
-      ]);
-      setStats({
-        totalJobs: 362,
-        matchedCount: 3,
-        pendingCount: 3,
-        conversionRate: "0.0%",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const handleReview = async (job: any) => {
-    setSelectedJob(job);
-    setShowApprovalModal(true);
-    setReviewLoading(true);
-    setReviewDetails(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/review/${job.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviewDetails(data);
-      } else {
-        throw new Error("Review API failed");
-      }
-    } catch (err) {
-      console.warn("Failed to fetch live compilation review, utilizing fallback:", err);
-      setReviewDetails({
-        resume_name: `${job.company}_resume_v11.tex`,
-        cover_letter_text: `Dear Hiring Team,\n\nI am thrilled to apply for the ${job.title} role at ${job.company}. My background in FastAPI and Kubernetes fits your technical challenges...`,
-        outreach_text: `Hi, I noticed the opening for ${job.title} at ${job.company}. I'd love to connect and share how my FastAPI work matches your team's current focus!`,
-        warnings: ["Offline Fallback Mode active."]
-      });
-    } finally {
-      setReviewLoading(false);
-    }
-  };
-
-  const handleApprove = async () => {
-    if (!selectedJob) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/approve/${selectedJob.id}`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        alert(`Application for ${selectedJob.company} approved and logged in CRM!`);
-        fetchDashboardData();
-      } else {
-        throw new Error("Approval request failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert(`Simulated App approval for ${selectedJob.company} logged locally.`);
-    } finally {
-      setShowApprovalModal(false);
-    }
-  };
-
-  const handleTriggerDiscovery = async () => {
-    try {
-      alert("Triggering daily discovery & scoring loop in cloud background...");
-      const res = await fetch(`${API_BASE}/api/trigger-discovery`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        alert(`Discovery Run Complete!\nProcessed: ${data.processed}\nMatches: ${data.matched}`);
-        fetchDashboardData();
-      } else {
-        throw new Error("Discovery trigger failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Offline simulation: Scraper processed 2 mock opportunities.");
-    }
-  };
-
-  const pendingJobs = matchedJobs.filter(j => j.status === "discovered");
-
   return (
-    <div className="min-h-screen bg-[#F0EBE1] text-black font-sans p-6 md:p-12 flex flex-col md:flex-row gap-8">
-      {/* Sidebar navigation */}
-      <Sidebar
-        selectedTab={selectedTab}
-        setSelectedTab={setSelectedTab}
-        pendingCount={pendingJobs.length}
-      />
+    <div className="min-h-screen bg-[#F0EBE1] text-black font-sans flex flex-col justify-between selection:bg-[#4F46E5] selection:text-white">
+      {/* Navbar */}
+      <header className="border-b-4 border-black bg-white py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🤖</span>
+          <span className="text-xl font-black uppercase tracking-wider">JobHunterAI</span>
+        </div>
+        <Link
+          href="/dashboard"
+          className="bg-black text-white font-black px-6 py-2 border-2 border-black hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] transition-all text-sm"
+        >
+          Open App 🚀
+        </Link>
+      </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col gap-8">
-        {/* Top Header Grid */}
-        <StatsGrid
-          totalJobs={stats.totalJobs}
-          matchedCount={stats.matchedCount}
-          pendingCount={pendingJobs.length}
-          conversionRate={stats.conversionRate}
-        />
+      {/* Hero Section */}
+      <section className="py-20 px-6 md:px-12 max-w-5xl mx-auto text-center flex flex-col items-center">
+        <span className="bg-yellow-300 text-xs font-black uppercase px-3 py-1 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-6">
+          V11 Cloud-Native Release
+        </span>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight uppercase leading-none max-w-4xl">
+          Autonomously Land Your Next <span className="text-[#4F46E5]">Remote Engineering</span> Role
+        </h1>
+        <p className="text-lg md:text-xl font-bold text-gray-700 mt-6 max-w-2xl leading-relaxed">
+          JobHunterAI runs 24/7 in the cloud. It discovers high-fit remote positions, tailors evidence-grounded resumes, and delivers a spreadsheet report directly to your Gmail inbox every morning.
+        </p>
+        
+        {/* Claymorphic Button */}
+        <Link
+          href="/dashboard"
+          className="mt-10 bg-[#4F46E5] text-white font-black text-lg px-8 py-4 border-4 border-black rounded-full shadow-[inset_0_4px_4px_rgba(255,255,255,0.4),_6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] hover:bg-[#4338CA] transition-all"
+        >
+          Get Started &bull; Launch Dashboard
+        </Link>
+      </section>
 
-        {/* Content Tab Box */}
-        {selectedTab === "queue" && (
-          <div>
-            {loading ? (
-              <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center font-bold">
-                🔄 Syncing with Database Gateway...
-              </div>
-            ) : (
-              <MatchQueue
-                jobs={pendingJobs}
-                onReview={handleReview}
-              />
-            )}
-          </div>
-        )}
-
-        {selectedTab !== "queue" && (
-          <section className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex-1 flex flex-col items-center justify-center text-center">
-            <span className="text-5xl">🚧</span>
-            <h3 className="text-xl font-black uppercase mt-4">Module under active construction</h3>
-            <p className="text-sm text-gray-600 mt-2 max-w-sm">
-              The presentation pages are being integrated into Next.js. Expose existing APIs to render this data.
-            </p>
-          </section>
-        )}
-      </main>
-
-      {/* Brutalist Modal */}
-      {showApprovalModal && selectedJob && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white border-4 border-black p-6 md:p-8 max-w-lg w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative">
-            <button
-              onClick={() => setShowApprovalModal(false)}
-              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white font-black w-8 h-8 rounded-full border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm"
-            >
-              ✕
-            </button>
-            <h3 className="text-xl font-black uppercase mb-2">Review Application Package</h3>
-            <p className="text-sm text-gray-500 font-bold mb-4">
-              {selectedJob.title} — {selectedJob.company}
-            </p>
-
-            {reviewLoading ? (
-              <div className="py-12 text-center font-bold">
-                ⚙️ Compiling tailored resume variants and checking rule criticisms...
-              </div>
-            ) : reviewDetails ? (
-              <div className="flex flex-col gap-4 mb-6">
-                <div className="p-3 bg-[#FAF9F6] border-2 border-black">
-                  <span className="block text-xs font-black uppercase text-gray-500 mb-1">Tailored Resume Output</span>
-                  <span className="font-mono text-xs">{reviewDetails.resume_name}</span>
-                </div>
-                <div className="p-3 bg-[#FAF9F6] border-2 border-black max-h-36 overflow-y-auto">
-                  <span className="block text-xs font-black uppercase text-gray-500 mb-1">Cover Letter Draft</span>
-                  <span className="text-xs whitespace-pre-wrap">{reviewDetails.cover_letter_text}</span>
-                </div>
-                <div className="p-3 bg-[#FAF9F6] border-2 border-black max-h-24 overflow-y-auto">
-                  <span className="block text-xs font-black uppercase text-gray-500 mb-1">LinkedIn Outreach</span>
-                  <span className="text-xs whitespace-pre-wrap">{reviewDetails.outreach_text}</span>
-                </div>
-                {reviewDetails.warnings && reviewDetails.warnings.length > 0 && (
-                  <div className="p-3 bg-red-50 border-2 border-red-500 text-red-700 text-xs font-bold">
-                    ⚠️ warnings:
-                    <ul className="list-disc pl-4 mt-1 font-semibold">
-                      {reviewDetails.warnings.map((w: string, idx: number) => (
-                        <li key={idx}>{w}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="py-12 text-center text-red-500 font-bold">
-                ⚠️ Failed to load review details.
-              </div>
-            )}
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowApprovalModal(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 font-black py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] text-sm active:translate-x-0.5 active:translate-y-0.5 transition-all"
-              >
-                Reject / Re-tailor
-              </button>
-              <button
-                onClick={handleApprove}
-                className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white font-black py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] text-sm active:translate-x-0.5 active:translate-y-0.5 transition-all"
-              >
-                Approve & Mark Applied
-              </button>
+      {/* Product Comparisons: The Problem */}
+      <section className="bg-white border-y-4 border-black py-16 px-6 md:px-12">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-black text-center uppercase mb-12">The Job Hunting Problem</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-6 border-4 border-black bg-[#FAF9F6] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-3xl">🐌</span>
+              <h3 className="text-xl font-black uppercase mt-4">Manual Tailoring</h3>
+              <p className="text-sm font-semibold text-gray-600 mt-2 leading-relaxed">
+                Adapting cover letters and bullets manually for dozens of positions is slow, exhausting, and prone to fatigue.
+              </p>
+            </div>
+            <div className="p-6 border-4 border-black bg-[#FAF9F6] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-3xl">⚠️</span>
+              <h3 className="text-xl font-black uppercase mt-4">Auto-Apply Bots</h3>
+              <p className="text-sm font-semibold text-gray-600 mt-2 leading-relaxed">
+                Spamming generic applications without tailoring gets your resume immediately filtered by ATS systems or ignored by recruiters.
+              </p>
+            </div>
+            <div className="p-6 border-4 border-black bg-[#D1FAE5] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-3xl">🌟</span>
+              <h3 className="text-xl font-black uppercase mt-4 text-emerald-950">JobHunterAI Platform</h3>
+              <p className="text-sm font-bold text-emerald-900 mt-2 leading-relaxed">
+                Programmatic ATS matching, evidence-backed bullet point verification, and human-in-the-loop approval before anything is sent.
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </section>
+
+      {/* How it works */}
+      <section className="py-16 px-6 md:px-12 max-w-5xl mx-auto w-full">
+        <h2 className="text-3xl font-black text-center uppercase mb-12">How it works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[
+            { step: "01", title: "Continuous Scan", desc: "Background cloud workers scrape remote portals for matching profiles." },
+            { step: "02", title: "Evidence Scoring", desc: "Scores are computed using career knowledge graph and skill datasets." },
+            { step: "03", title: "Compile Package", desc: "Generates grounded LaTeX resumes, cover letters, and outreach files." },
+            { step: "04", title: "Inbox Briefing", desc: "A spreadsheet listing and HTML report arrives in your email at 08:00 AM." }
+          ].map((item, index) => (
+            <div key={index} className="bg-white border-4 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-2xl font-black text-[#4F46E5] block mb-2">{item.step}</span>
+              <h4 className="text-lg font-black uppercase mb-1">{item.title}</h4>
+              <p className="text-xs font-semibold text-gray-600 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing Section (Beta Special) */}
+      <section className="bg-white border-t-4 border-black py-16 px-6 md:px-12 text-center">
+        <div className="max-w-xl mx-auto border-4 border-black p-8 bg-[#FAF9F6] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <h3 className="text-2xl font-black uppercase">Candidate Beta Program</h3>
+          <p className="text-sm font-bold text-gray-600 mt-2">
+            Free high-precision tracking for remote software & AI engineers.
+          </p>
+          <div className="text-5xl font-black my-6">$0</div>
+          <Link
+            href="/dashboard"
+            className="block bg-black text-white font-black py-3 border-2 border-black hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] transition-all text-sm uppercase"
+          >
+            Launch Free Account
+          </Link>
+        </div>
+      </section>
+
+      {/* FAQ Accordion */}
+      <section className="py-16 px-6 md:px-12 max-w-4xl mx-auto w-full">
+        <h2 className="text-3xl font-black text-center uppercase mb-12">Frequently Asked Questions</h2>
+        <div className="flex flex-col gap-4">
+          {[
+            {
+              q: "Is this an auto-apply bot?",
+              a: "Absolutely not. JobHunterAI does all the discovery, scoring, and tailoring in the background, but human-in-the-loop approval is strictly required before any application is sent out."
+            },
+            {
+              q: "How does the platform guarantee resume truthfulness?",
+              a: "We model your credentials as a relational Knowledge Graph. Every bullet point compiled into your resume must trace back to concrete evidence tags (such as pull request numbers or commit IDs) logged in the database."
+            },
+            {
+              q: "Does this require my laptop to be on?",
+              a: "No. Because it runs cloud services, background discovery workers, databases, and cron schedulers operate 24/7. Your daily brief and matching spreadsheet arrive in your inbox even when your PC is offline."
+            }
+          ].map((faq, index) => (
+            <div key={index} className="bg-white border-2 border-black p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <h4 className="text-md font-black uppercase">{faq.q}</h4>
+              <p className="text-sm font-semibold text-gray-600 mt-2 leading-relaxed">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t-4 border-black bg-white py-8 px-6 text-center text-xs font-bold text-gray-600">
+        &copy; {new Date().getFullYear()} JobHunterAI. All rights reserved. Deployed Cloud-Native.
+      </footer>
     </div>
   );
 }
