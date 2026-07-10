@@ -25,7 +25,7 @@ class CandidateTable(Base):
     github = Column(String(150))
     linkedin = Column(String(150))
     website = Column(String(150))
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     # Relationships
     experiences = relationship("ExperienceTable", back_populates="candidate", cascade="all, delete-orphan")
@@ -113,7 +113,7 @@ class JobOpportunityTable(Base):
     requirements_json = Column(Text, default="[]") # JSON list
     ats_keywords_json = Column(Text, default="[]") # JSON list
     overall_score = Column(Float, default=0.0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     status = Column(String(50), default="discovered") # discovered, processing, applied, rejected
 
     applications = relationship("ApplicationTable", back_populates="job")
@@ -125,7 +125,7 @@ class ResumeVariantTable(Base):
     version = Column(Integer, nullable=False)
     resume_type = Column(String(50), default="backend") # backend, frontend
     latex_source = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     
     candidate = relationship("CandidateTable", back_populates="resumes")
     applications = relationship("ApplicationTable", back_populates="resume_variant")
@@ -140,7 +140,7 @@ class ApplicationTable(Base):
     outreach_sequence_path = Column(String(300))
     status = Column(String(50), default="Applied") # Applied, OA, Interview, Rejected, Offer
     experiment_group = Column(String(50), default="A") # A/B testing group
-    date_applied = Column(DateTime, default=datetime.datetime.utcnow)
+    date_applied = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     outcomes_log = Column(Text) # Notes/Logs for interview feedback
     compensation_details = Column(Text) # JSON structure for offer details if status == 'Offer'
     
@@ -157,7 +157,7 @@ class RecruiterCRMTable(Base):
     title = Column(String(100)) # e.g. Technical Recruiter
     contact_info = Column(String(150)) # e.g. email or linkedin url
     message_history_json = Column(Text, default="[]") # JSON list of messages
-    last_interacted = Column(DateTime, default=datetime.datetime.utcnow)
+    last_interacted = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     application = relationship("ApplicationTable", back_populates="recruiters")
 
