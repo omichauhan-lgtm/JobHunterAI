@@ -4,6 +4,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from storage.db import SessionLocal, JobOpportunityTable, ApplicationTable, init_db
+from storage.crud import get_all_job_opportunities, get_job_opportunity_by_id, create_application
+from storage.firestore_db import USE_FIRESTORE
 from engines.notifications import get_job_funnel_stats
 from orchestrator import run_application_pipeline, run_daily_autonomous_loop
 
@@ -46,7 +48,7 @@ def get_stats(db: Session = Depends(get_db)):
 @app.get("/api/jobs")
 def list_jobs(db: Session = Depends(get_db)):
     try:
-        jobs = db.query(JobOpportunityTable).order_by(JobOpportunityTable.overall_score.desc()).all()
+        jobs = get_all_job_opportunities(db)
         return [
             {
                 "id": j.id,
@@ -67,10 +69,10 @@ def list_jobs(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/review/{job_id}")
-def review_application(job_id: int, db: Session = Depends(get_db)):
+def review_application(job_id: str, db: Session = Depends(get_db)):
     # Run/fetch the compiled pipeline materials for this job ID
     try:
-        job = db.query(JobOpportunityTable).filter(JobOpportunityTable.id == job_id).first()
+        job = get_job_opportunity_by_id(db, job_id)
         if not job:
             raise HTTPException(status_code=404, detail="Job opportunity not found")
         
@@ -110,25 +112,31 @@ def review_application(job_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/approve/{job_id}")
-def approve_application(job_id: int, db: Session = Depends(get_db)):
+def approve_application(job_id: str, db: Session = Depends(get_db)):
     try:
-        job = db.query(JobOpportunityTable).filter(JobOpportunityTable.id == job_id).first()
+        job = get_job_opportunity_by_id(db, job_id)
         if not job:
             raise HTTPException(status_code=404, detail="Job opportunity not found")
             
         # Update job status to Applied
-        job.status = "Applied"
+        if USE_FIRESTORE:
+            from storage.firestore_db import update_job_status_fs
+            update_job_status_fs(job_id, "applied")
+        else:
+            job.status = "applied"
+            db.commit()
         
         # Log entry in Application Table
         app_entry = ApplicationTable(
-            job_opportunity_id=job.id,
+            candidate_id=1,
+            job_id=job.id,
             status="Applied"
         )
-        db.add(app_entry)
-        db.commit()
+        create_application(db, app_entry)
         return {"success": True, "message": f"Application for {job.company_name} approved and logged."}
     except Exception as e:
-        db.rollback()
+        if not USE_FIRESTORE:
+            db.rollback()
         logger.error(f"Error approving application: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

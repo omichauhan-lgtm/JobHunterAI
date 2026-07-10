@@ -8,12 +8,27 @@ from .db import (
     RelationshipTable, init_db
 )
 from models.schemas import MasterProfile
+from .firestore_db import (
+    USE_FIRESTORE,
+    get_candidate_fs,
+    get_candidate_profile_data_fs,
+    get_all_jobs_fs,
+    get_job_fs,
+    save_job_opportunity_fs,
+    create_application_fs,
+    update_job_status_fs,
+    get_stats_fs
+)
 
 def get_candidate(db: Session, candidate_id: int = 1):
+    if USE_FIRESTORE:
+        return get_candidate_fs(candidate_id)
     return db.query(CandidateTable).filter(CandidateTable.id == candidate_id).first()
 
 def get_candidate_profile_data(db: Session, candidate_id: int = 1):
     """Retrieve full candidate knowledge graph as standard dictionary/JSON structure."""
+    if USE_FIRESTORE:
+        return get_candidate_profile_data_fs(candidate_id)
     candidate = get_candidate(db, candidate_id)
     if not candidate:
         return None
@@ -203,6 +218,26 @@ def import_master_profile(db: Session, profile: MasterProfile):
 
 def save_job_opportunity(db: Session, job: JobOpportunityTable) -> JobOpportunityTable:
     """Save or update discovered job opportunity."""
+    if USE_FIRESTORE:
+        job_dict = {
+            "title": job.title,
+            "company_name": job.company_name,
+            "jd_text": job.jd_text,
+            "url": job.url,
+            "source": job.source,
+            "salary_range": job.salary_range,
+            "remote_status": job.remote_status,
+            "tech_stack_json": job.tech_stack_json or "[]",
+            "requirements_json": job.requirements_json or "[]",
+            "ats_keywords_json": job.ats_keywords_json or "[]",
+            "overall_score": job.overall_score or 0.0,
+            "status": job.status or "discovered"
+        }
+        saved_dict = save_job_opportunity_fs(job_dict)
+        if saved_dict:
+            job.id = saved_dict.get("id")
+        return job
+
     existing = db.query(JobOpportunityTable).filter(
         JobOpportunityTable.company_name == job.company_name,
         JobOpportunityTable.title == job.title
@@ -248,12 +283,35 @@ def create_resume_variant(db: Session, candidate_id: int, resume_type: str, late
     return variant
 
 def create_application(db: Session, app: ApplicationTable) -> ApplicationTable:
+    if USE_FIRESTORE:
+        app_dict = {
+            "candidate_id": app.candidate_id,
+            "job_id": app.job_id,
+            "resume_variant_id": app.resume_variant_id,
+            "cover_letter_path": app.cover_letter_path,
+            "outreach_sequence_path": app.outreach_sequence_path,
+            "status": app.status,
+            "experiment_group": app.experiment_group,
+            "outcomes_log": app.outcomes_log,
+            "compensation_details": app.compensation_details
+        }
+        saved = create_application_fs(app_dict)
+        if saved:
+            app.id = saved.get("id")
+        return app
     db.add(app)
     db.commit()
     db.refresh(app)
     return app
 
 def update_application_status(db: Session, application_id: int, status: str):
+    if USE_FIRESTORE:
+        try:
+            from .firestore_db import db_fs
+            db_fs.collection("applications").document(str(application_id)).update({"status": status})
+        except:
+            pass
+        return None
     app = db.query(ApplicationTable).filter(ApplicationTable.id == application_id).first()
     if app:
         app.status = status
@@ -282,6 +340,13 @@ def save_recruiter_interaction(db: Session, application_id: int, name: str, titl
 
 def get_application_analytics(db: Session):
     """Retrieve funnel statistics for the dashboard."""
+    if USE_FIRESTORE:
+        stats = get_stats_fs()
+        return {
+            "total_applications": stats.get("total_jobs", 0),
+            "funnel": {"Applied": stats.get("total_jobs", 0)},
+            "response_rate_percent": stats.get("interview_rate", 0.0)
+        }
     total_apps = db.query(func.count(ApplicationTable.id)).scalar() or 0
     funnel = db.query(ApplicationTable.status, func.count(ApplicationTable.id)).group_by(ApplicationTable.status).all()
     funnel_dict = {status: count for status, count in funnel}
@@ -295,3 +360,48 @@ def get_application_analytics(db: Session):
         "funnel": funnel_dict,
         "response_rate_percent": response_rate
     }
+
+def get_all_job_opportunities(db: Session):
+    if USE_FIRESTORE:
+        fs_jobs = get_all_jobs_fs()
+        job_objects = []
+        for j in fs_jobs:
+            job_obj = JobOpportunityTable(
+                title=j.get("title", ""),
+                company_name=j.get("company_name", ""),
+                jd_text=j.get("jd_text", ""),
+                url=j.get("url", ""),
+                source=j.get("source", ""),
+                salary_range=j.get("salary_range"),
+                remote_status=j.get("remote_status", "Remote"),
+                overall_score=j.get("overall_score", 0.0),
+                status=j.get("status", "discovered")
+            )
+            job_obj.id = j.get("id")
+            job_objects.append(job_obj)
+        return job_objects
+    return db.query(JobOpportunityTable).order_by(JobOpportunityTable.overall_score.desc()).all()
+
+def get_job_opportunity_by_id(db: Session, job_id: str):
+    if USE_FIRESTORE:
+        j = get_job_fs(job_id)
+        if not j:
+            return None
+        job_obj = JobOpportunityTable(
+            title=j.get("title", ""),
+            company_name=j.get("company_name", ""),
+            jd_text=j.get("jd_text", ""),
+            url=j.get("url", ""),
+            source=j.get("source", ""),
+            salary_range=j.get("salary_range"),
+            remote_status=j.get("remote_status", "Remote"),
+            overall_score=j.get("overall_score", 0.0),
+            status=j.get("status", "discovered")
+        )
+        job_obj.id = j.get("id")
+        return job_obj
+    try:
+        id_val = int(job_id)
+    except:
+        return None
+    return db.query(JobOpportunityTable).filter(JobOpportunityTable.id == id_val).first()
