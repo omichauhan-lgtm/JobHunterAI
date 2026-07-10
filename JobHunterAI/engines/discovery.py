@@ -38,14 +38,13 @@ def parse_lever_job(url: str) -> dict:
             title_tag = soup.find("h2")
             title = title_tag.get_text().strip() if title_tag else "Backend Engineer"
             
-            # Company
-            # Lever pages typically have the logo or company name in page metadata or footer
-            meta_title = soup.find("title")
+            # Company parsed deterministically from Lever URL slug
             company = "Target Company"
-            if meta_title:
-                match = re.search(r"-\s*([^-\n]+)$", meta_title.get_text())
-                if match:
-                    company = match.group(1).strip()
+            if "lever.co/" in url:
+                try:
+                    company = url.split("lever.co/")[1].split("/")[0].capitalize()
+                except:
+                    pass
             
             # JD Description
             jd_text = clean_html(html)
@@ -77,9 +76,13 @@ def parse_greenhouse_job(url: str) -> dict:
             title_tag = soup.find("h1", class_="app-title")
             title = title_tag.get_text().strip() if title_tag else "Backend Engineer"
             
-            # Company
-            company_tag = soup.find("span", class_="company-name")
-            company = company_tag.get_text().replace("at ", "").strip() if company_tag else "Target Company"
+            # Company parsed deterministically from Greenhouse URL slug
+            company = "Target Company"
+            if "greenhouse.io/" in url:
+                try:
+                    company = url.split("greenhouse.io/")[1].split("/")[0].capitalize()
+                except:
+                    pass
             
             # JD Description
             jd_text = clean_html(html)
@@ -124,6 +127,23 @@ def discover_job_from_url(db: Session, url: str) -> JobOpportunityTable:
         remote_status=job_data["remote_status"],
         status="discovered"
     )
+    
+    # Calculate fit score immediately upon ingestion
+    from engines.ranking import compute_job_score
+    from storage.crud import get_candidate
+    candidate = get_candidate(db, 1)
+    if candidate:
+        skills_list = [s.name for s in candidate.skills]
+        db_job.overall_score = compute_job_score(
+            db_job.jd_text,
+            db_job.title,
+            False,
+            db_job.remote_status,
+            skills_list
+        )
+    else:
+        db_job.overall_score = 50
+        
     return save_job_opportunity(db, db_job)
 
 def discover_arbeitnow_jobs(db: Session) -> list:
