@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Python FastAPI Backend API Server
+  api:
+    build: ./JobHunterAI
+    container_name: jobhunterai_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - candidate_data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JOB_APPLY_THRESHOLD=${JOB_APPLY_THRESHOLD}
+      - DEFAULT_RESUME_TEMPLATE=${DEFAULT_RESUME_TEMPLATE}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    restart: always
+
+  # Next.js React Frontend Dashboard
+  frontend:
+    build: ./frontend
+    container_name: jobhunterai_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+    restart: always
+
+  # Background Cron Worker
+  worker:
+    build: ./JobHunterAI
+    container_name: jobhunterai_worker
+    volumes:
+      - candidate_data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JOB_APPLY_THRESHOLD=${JOB_APPLY_THRESHOLD}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+    entrypoint: ["python", "main.py", "--daily-loop"]
+
+volumes:
+  candidate_data:
