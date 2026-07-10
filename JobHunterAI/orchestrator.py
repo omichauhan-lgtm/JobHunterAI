@@ -16,8 +16,8 @@ from config import logger, GEN_DIR, APPLY_THRESHOLD
 from engines.discovery import run_mock_discovery
 from engines.notifications import send_daily_briefing
 
-def run_application_pipeline(db: Session, job_id: int, template_name: str = "backend.tex") -> dict:
-    """Coordinates the deterministic matching and LLM generation pipeline."""
+def run_application_pipeline(db: Session, job_id: int, template_name: str = "backend.tex", mark_applied: bool = True) -> dict:
+    """Coordinates the deterministic matching and LLM generation pipeline. If mark_applied is False, pre-compiles assets but leaves status as discovered for human review."""
     # 1. Fetch Candidate Knowledge Graph
     logger.info("Stage 1: Fetching Candidate Career Graph from database...")
     profile = get_candidate_profile_data(db, candidate_id=1)
@@ -213,21 +213,23 @@ def run_application_pipeline(db: Session, job_id: int, template_name: str = "bac
     with open(exp_path, "w", encoding="utf-8") as f:
         json.dump(explainability_data, f, indent=2)
 
-    # 10. Record Application Details
-    logger.info("Stage 10: Logging application details in SQLite CRM...")
-    app = ApplicationTable(
-        candidate_id=1,
-        job_id=job.id,
-        resume_variant_id=variant.id,
-        cover_letter_path=str(cl_path),
-        outreach_sequence_path=str(outreach_path),
-        status="Applied"
-    )
-    create_application(db, app)
-    job.status = "applied"
-    db.commit()
-
-    logger.info(f"Application recorded successfully for {job.company_name}!")
+    # 10. Record Application Details (only if mark_applied is true to preserve human-in-the-loop review)
+    if mark_applied:
+        logger.info("Stage 10: Logging application details in SQLite CRM...")
+        app = ApplicationTable(
+            candidate_id=1,
+            job_id=job.id,
+            resume_variant_id=variant.id,
+            cover_letter_path=str(cl_path),
+            outreach_sequence_path=str(outreach_path),
+            status="Applied"
+        )
+        create_application(db, app)
+        job.status = "applied"
+        db.commit()
+        logger.info(f"Application recorded successfully for {job.company_name}!")
+    else:
+        logger.info(f"Assets auto-tailored for {job.company_name}. Leaving status as discovered for human review.")
     
     return {
         "success": True,
@@ -285,7 +287,7 @@ def run_daily_autonomous_loop(db: Session) -> dict:
             if not app_exists:
                 try:
                     logger.info(f"Auto-tailoring assets for matched opportunity: {job.title} at {job.company_name} (Score: {score}%)")
-                    run_application_pipeline(db, job.id)
+                    run_application_pipeline(db, job.id, mark_applied=False)
                 except Exception as e:
                     logger.error(f"Error tailoring assets during daily loop: {e}")
                     
