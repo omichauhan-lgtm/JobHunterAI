@@ -76,8 +76,18 @@ def review_application(job_id: str, db: Session = Depends(get_db)):
         if not job:
             raise HTTPException(status_code=404, detail="Job opportunity not found")
         
-        # Trigger tailoring pipeline if files not yet generated
-        res = run_application_pipeline(db, job_id)
+        # Trigger tailoring pipeline if files not yet generated with dynamic template selection
+        from engines.ranking import classify_role
+        role = classify_role(job.title)
+        template_map = {
+            "AI": "ai.tex",
+            "Analytics": "analytics.tex",
+            "Frontend": "frontend.tex",
+            "Backend": "backend.tex"
+        }
+        selected_template = template_map.get(role, "backend.tex")
+        logger.info(f"Triggering tailoring review for {job.company_name} using template {selected_template}")
+        res = run_application_pipeline(db, job_id, template_name=selected_template)
         if not res["success"]:
             # If AI is offline, provide mock details to ensure dashboard UI responsiveness
             return {

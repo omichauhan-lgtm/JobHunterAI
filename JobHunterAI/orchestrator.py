@@ -287,7 +287,17 @@ def run_daily_autonomous_loop(db: Session) -> dict:
             if not app_exists:
                 try:
                     logger.info(f"Auto-tailoring assets for matched opportunity: {job.title} at {job.company_name} (Score: {score}%)")
-                    run_application_pipeline(db, job.id, mark_applied=False)
+                    from engines.ranking import classify_role
+                    role = classify_role(job.title)
+                    template_map = {
+                        "AI": "ai.tex",
+                        "Analytics": "analytics.tex",
+                        "Frontend": "frontend.tex",
+                        "Backend": "backend.tex"
+                    }
+                    selected_template = template_map.get(role, "backend.tex")
+                    logger.info(f"Selected resume template: {selected_template} for role: {role}")
+                    run_application_pipeline(db, job.id, template_name=selected_template, mark_applied=False)
                 except Exception as e:
                     logger.error(f"Error tailoring assets during daily loop: {e}")
                     

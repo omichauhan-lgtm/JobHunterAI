@@ -44,7 +44,10 @@ def main():
         if args.url:
             print(f"Ingesting job from URL: {args.url}...")
             job = discover_job_from_url(db, args.url)
-            print(f"Successfully ingested [{job.id}] {job.title} at {job.company_name}!")
+            if job:
+                print(f"Successfully ingested [{job.id}] {job.title} at {job.company_name}!")
+            else:
+                print(f"Failed to ingest job details. Ensure the URL is an active, public Greenhouse or Lever job posting.")
             return
 
         if args.apply_job:

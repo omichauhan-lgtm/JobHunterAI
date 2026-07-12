@@ -35,8 +35,14 @@ def parse_lever_job(url: str) -> dict:
             soup = BeautifulSoup(html, "html.parser")
             
             # Title
-            title_tag = soup.find("h2")
-            title = title_tag.get_text().strip() if title_tag else "Backend Engineer"
+            title_tag = soup.find("h2") or soup.find("h1")
+            if not title_tag:
+                logger.warning(f"Lever title element not found for {url}. Posting may have expired.")
+                return None
+            title = title_tag.get_text().strip()
+            if any(term in title.lower() for term in ["current openings", "jobs at", "open positions", "openings at"]):
+                logger.warning(f"URL redirected to company index page: {title}. Posting may have expired.")
+                return None
             
             # Company parsed deterministically from Lever URL slug
             company = "Target Company"
@@ -73,8 +79,14 @@ def parse_greenhouse_job(url: str) -> dict:
             soup = BeautifulSoup(html, "html.parser")
             
             # Title
-            title_tag = soup.find("h1", class_="app-title")
-            title = title_tag.get_text().strip() if title_tag else "Backend Engineer"
+            title_tag = soup.find("h1", class_="app-title") or soup.find("h1", class_="section-header") or soup.find("h1")
+            if not title_tag:
+                logger.warning(f"Greenhouse title element not found for {url}. Posting may have expired.")
+                return None
+            title = title_tag.get_text().strip()
+            if any(term in title.lower() for term in ["current openings", "jobs at", "open positions", "openings at"]):
+                logger.warning(f"URL redirected to company index page: {title}. Posting may have expired.")
+                return None
             
             # Company parsed deterministically from Greenhouse URL slug
             company = "Target Company"
@@ -108,15 +120,8 @@ def discover_job_from_url(db: Session, url: str) -> JobOpportunityTable:
         job_data = parse_greenhouse_job(url)
         
     if not job_data:
-        # Fallback to generic URL or manual parse
-        job_data = {
-            "title": "Software Engineer",
-            "company_name": "Tech Startup",
-            "jd_text": f"Manual scrape from URL: {url}. Please configure requirements.",
-            "url": url,
-            "source": "Direct URL",
-            "remote_status": "Remote"
-        }
+        logger.error(f"Failed to parse active job details from URL: {url} (Page may be expired, redirected, or invalid)")
+        return None
         
     db_job = JobOpportunityTable(
         title=job_data["title"],
@@ -220,12 +225,12 @@ def discover_arbeitnow_jobs(db: Session) -> list:
             return db_jobs
     except Exception as e:
         logger.error(f"Failed to scrape Arbeitnow API: {e}")
-        return []
+        return None
 
 def run_mock_discovery(db: Session) -> list:
     """Run real API discovery first, and fallback to mock list for demo robustness."""
     real_jobs = discover_arbeitnow_jobs(db)
-    if real_jobs:
+    if real_jobs is not None:
         return real_jobs
         
     # Mock fallback
