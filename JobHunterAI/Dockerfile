@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project source files
 COPY . .
 
-# Expose Streamlit default port
-EXPOSE 8501
+# Expose FastAPI default port
+EXPOSE 8000
 
-# Default CMD runs the Streamlit UI dashboard
-CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Default CMD runs the FastAPI API Gateway
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}"]
