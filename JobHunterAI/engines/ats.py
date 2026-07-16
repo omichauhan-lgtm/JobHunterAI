@@ -27,7 +27,7 @@ def run_ats_optimization(bullets: list, keywords: list) -> dict:
     initial_score = calculate_ats_score(bullets, keywords)
     logger.info(f"Initial ATS Match Score: {initial_score}%")
     
-    if initial_score >= 90.0 or OFFLINE_MODE:
+    if initial_score >= 90.0:
         return {
             "optimized_bullets": bullets,
             "initial_score": initial_score,
@@ -36,6 +36,33 @@ def run_ats_optimization(bullets: list, keywords: list) -> dict:
         }
         
     optimized = bullets.copy()
+    
+    if OFFLINE_MODE:
+        logger.info("Running in OFFLINE mode. Applying deterministic keyword injection.")
+        for kw in keywords:
+            text = " ".join(optimized).lower()
+            if kw.lower() in text:
+                continue
+            
+            injected = False
+            for i, b in enumerate(optimized):
+                if "skills:" in b.lower() or "tech stack:" in b.lower():
+                     optimized[i] = b.rstrip(".") + f", {kw}."
+                     injected = True
+                     break
+            
+            if not injected and optimized:
+                optimized[0] = optimized[0].rstrip(".") + f" (utilizing {kw})."
+                
+        final_score = calculate_ats_score(optimized, keywords)
+        logger.info(f"Offline injection complete. Final ATS score: {final_score}%")
+        return {
+            "optimized_bullets": optimized,
+            "initial_score": initial_score,
+            "final_score": final_score,
+            "iterations": 1
+        }
+        
     current_score = initial_score
     iterations = 0
     max_iterations = 3
