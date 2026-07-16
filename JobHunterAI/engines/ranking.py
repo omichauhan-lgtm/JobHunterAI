@@ -76,11 +76,13 @@ def compute_job_score(job_jd: str, job_title: str, company_yc: bool, remote_stat
     elif tier == 3:
         multiplier = 0.7
         
-    # 6. Remote-Readiness Competency Boost (up to 5 points)
-    remote_competency_terms = ["async", "asynchronous", "self-starter", "self-motivated", "documentation", "independent", "autonomous", "written communication", "git workflow"]
-    if any(w in jd_lower for w in remote_competency_terms):
-        has_distributed_stack = any(s in [sk.lower() for sk in candidate_skills] for s in ["fastapi", "react", "docker", "redis"])
-        if has_distributed_stack:
+    # 6. Remote-Readiness & Async Flexibility Boost (up to 15 points)
+    flexible_terms = ["async", "asynchronous", "flexible hours", "flexible working", "choose your own hours", "work from anywhere", "any timezone", "timezone-agnostic", "results-oriented", "output-oriented"]
+    if any(w in jd_lower for w in flexible_terms):
+        score += 15.0 # High alignment boost for flexible hours and async work
+    else:
+        remote_competency_terms = ["self-starter", "self-motivated", "documentation", "independent", "autonomous", "written communication", "git workflow"]
+        if any(w in jd_lower for w in remote_competency_terms):
             score += 5.0
 
     score = score * multiplier
