@@ -165,5 +165,44 @@ class TestJobHunterAI(unittest.TestCase):
         valid_report = run_truth_validation(valid_gen_data, db_profile)
         self.assertEqual(valid_report["passed"], True)
 
+    def test_seniority_and_async_boost(self):
+        """Verify seniority penalty and async flexibility boost behave correctly."""
+        skills = ["Python", "FastAPI", "Docker", "React"]
+        
+        score_senior = compute_job_score(
+            job_jd="Proficient in Python and FastAPI.",
+            job_title="Senior Backend Engineer",
+            company_yc=False,
+            remote_status="Remote",
+            candidate_skills=skills
+        )
+        self.assertTrue(score_senior < 35.0)
+
+        score_exp = compute_job_score(
+            job_jd="Requires 5+ years of experience in Python.",
+            job_title="Software Engineer",
+            company_yc=False,
+            remote_status="Remote",
+            candidate_skills=skills
+        )
+        self.assertTrue(score_exp < 35.0)
+
+        score_flex = compute_job_score(
+            job_jd="We support async working and flexible hours.",
+            job_title="Software Engineer",
+            company_yc=False,
+            remote_status="Remote",
+            candidate_skills=skills
+        )
+        
+        score_standard = compute_job_score(
+            job_jd="Standard 9-5 working day.",
+            job_title="Software Engineer",
+            company_yc=False,
+            remote_status="Remote",
+            candidate_skills=skills
+        )
+        self.assertTrue(score_flex > score_standard)
+
 if __name__ == "__main__":
     unittest.main()
