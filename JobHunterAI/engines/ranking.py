@@ -43,14 +43,22 @@ def compute_job_score(job_jd: str, job_title: str, company_yc: bool, remote_stat
     else:
         score += 5.0
 
-    # 4. Seniority Alignment (up to 15 points)
-    # If candidate is junior/mid-level, look for 'senior' and 'staff' tags in title to adjust fit
+    # 4. Seniority & Experience Alignment (up to 15 points, with compatibility penalty)
     title_lower = job_title.lower()
-    if "senior" in title_lower or "staff" in title_lower or "lead" in title_lower:
-        # Assume candidate is open to senior but slightly lower alignment if junior
-        score += 10.0
+    is_senior_role = any(w in title_lower for w in ["senior", "sr.", "staff", "lead", "principal", "architect"])
+    
+    requires_high_exp = False
+    exp_matches = re.findall(r"(\d+)\+?\s*years?", jd_lower)
+    for match in exp_matches:
+        years = int(match)
+        if years >= 3:
+            requires_high_exp = True
+            break
+            
+    if is_senior_role or requires_high_exp:
+        score -= 30.0 # Heavy deduction to filter out senior roles below threshold
     else:
-        score += 15.0 # Perfect alignment for general engineering roles
+        score += 15.0 # Full alignment for junior/mid-level roles
 
     # 5. Remote Job Stratification (Tiers)
     tier = 2 # default
