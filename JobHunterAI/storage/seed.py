@@ -136,7 +136,7 @@ def seed_database():
                 ]
             ),
             Experience(
-                company="Handshake AI",
+                company="JobHunterAI",
                 role="Creator & Lead AI Engineer",
                 org_type="Startup / Open Source",
                 is_open_source=False,
