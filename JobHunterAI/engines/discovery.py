@@ -111,6 +111,56 @@ def parse_greenhouse_job(url: str) -> dict:
         logger.error(f"Error parsing Greenhouse job: {e}")
         return None
 
+def parse_ashby_job(url: str) -> dict:
+    """Fetch and parse a public Ashby job page."""
+    try:
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req) as response:
+            html = response.read().decode('utf-8')
+            soup = BeautifulSoup(html, "html.parser")
+            
+            ld_json_tag = soup.find("script", type="application/ld+json")
+            if not ld_json_tag:
+                logger.warning(f"Ashby ld+json script not found for {url}.")
+                return None
+                
+            data = json.loads(ld_json_tag.string)
+            title = data.get("title", "")
+            company = data.get("hiringOrganization", {}).get("name", "Target Company")
+            description_html = data.get("description", "")
+            description = clean_html(description_html)
+            
+            remote_status = "Onsite"
+            locations = data.get("jobLocation", [])
+            if not isinstance(locations, list):
+                locations = [locations]
+            for loc in locations:
+                addr = loc.get("address", {}) if isinstance(loc, dict) else {}
+                locality = str(addr.get("addressLocality", "")).lower()
+                region = str(addr.get("addressRegion", "")).lower()
+                street = str(addr.get("streetAddress", "")).lower()
+                if "remote" in locality or "remote" in region or "remote" in street:
+                    remote_status = "Remote"
+                    break
+            
+            if "remote" in description.lower() and remote_status == "Onsite":
+                remote_status = "Remote"
+                
+            return {
+                "title": title,
+                "company_name": company,
+                "jd_text": description,
+                "url": url,
+                "source": "Ashby",
+                "remote_status": remote_status
+            }
+    except Exception as e:
+        logger.error(f"Error parsing Ashby job: {e}")
+        return None
+
 def discover_job_from_url(db: Session, url: str) -> JobOpportunityTable:
     """Ingest a job from a URL, parse it, and write it to the database."""
     job_data = None
@@ -118,6 +168,8 @@ def discover_job_from_url(db: Session, url: str) -> JobOpportunityTable:
         job_data = parse_lever_job(url)
     elif "greenhouse.io" in url:
         job_data = parse_greenhouse_job(url)
+    elif "ashbyhq.com" in url:
+        job_data = parse_ashby_job(url)
         
     if not job_data:
         logger.error(f"Failed to parse active job details from URL: {url} (Page may be expired, redirected, or invalid)")

@@ -136,20 +136,21 @@ def seed_database():
                 ]
             ),
             Experience(
-                company="Springspree, NIT Warangal",
-                role="Sponsorship Team Head",
-                org_type="Leadership Fest",
+                company="Handshake AI",
+                role="Creator & Lead AI Engineer",
+                org_type="Startup / Open Source",
                 is_open_source=False,
-                skills=["SQL"],
+                skills=["Python", "SQLite", "LLMs", "RAG"],
                 bullets=[
-                    "Managed corporate sponsorships and partnerships for the annual cultural fest (PR #42).",
-                    "Led negotiations with external vendors and partners to secure event funding (PR #42)."
+                    "Built an autonomous career intelligence platform leveraging deterministic AI pipelines and programmatic LLM generation (Commit 1a2b3c).",
+                    "Designed a custom Retrieval-Augmented Generation (RAG) system mapping semantic job requirements to candidate knowledge graphs (PR #1).",
+                    "Automated end-to-end processing pipelines including ATS keyword optimization and dynamic LaTeX document compilation (Commit 9ab13)."
                 ],
                 evidence=[
                     Evidence(
-                        type="PR",
-                        description="Secure corporate sponsorship packages (PR #42)",
-                        url="https://github.com/springspree/sponsorship/pull/42"
+                        type="Commit",
+                        description="Implement semantic ATS keyword injection loop",
+                        url="https://github.com/omichauhan-lgtm/handshake-ai/commit/1a2b3c"
                     )
                 ]
             )
@@ -204,19 +205,19 @@ def seed_database():
                 ]
             ),
             Project(
-                name="Credit Risk Intelligence",
+                name="JobHunterAI (Autonomous AI Workflow)",
                 category="AI/ML",
-                skills=["Python", "Streamlit", "Scikit-learn", "Pandas"],
+                skills=["Python", "SQLite", "LLMs", "RAG", "Prompt Engineering"],
                 description_bullets=[
-                    "Developed an automated system using machine learning default risk assessment prediction model (Commit 9ab13).",
-                    "Created an interactive Streamlit dashboard for real-time risk assessment and portfolio quality visualization (Commit 9ab13)."
+                    "Engineered a deterministic AI pipeline to autonomously ingest, parse, and score software engineering opportunities against a custom career knowledge graph.",
+                    "Built an automated continuous-generation workflow that programmatically matches job descriptions and dynamically injects ATS-optimized data into LaTeX templates."
                 ],
-                github_url="https://github.com/omichauhan-lgtm/credit-risk-intel",
+                github_url="https://github.com/omichauhan-lgtm/jobhunter-ai",
                 evidence=[
                     Evidence(
                         type="Commit",
-                        description="Train default risk Logistic Regression classifiers (Commit 9ab13)",
-                        url="https://github.com/omichauhan-lgtm/credit-risk-intel/commit/9ab13"
+                        description="Implement semantic ATS keyword injection loop",
+                        url="https://github.com/omichauhan-lgtm/jobhunter-ai/commit/1a2b3c"
                     )
                 ]
             )

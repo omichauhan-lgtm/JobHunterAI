@@ -148,6 +148,19 @@ def run_application_pipeline(db: Session, job_id: int, template_name: str = "bac
     with open(cl_path, "w", encoding="utf-8") as f:
         f.write(cl_content)
 
+    # Render LaTeX & Compile PDF Cover Letter
+    from engines.compiler import render_cover_letter_latex
+    cl_latex = render_cover_letter_latex(
+        profile["name"], job.company_name, job.title, cl_body,
+        {"email": profile["email"], "phone": profile["phone"], "github": profile["github"], "linkedin": profile["linkedin"]}
+    )
+    cl_tex_path = GEN_DIR / f"{safe_company_name}_cover_letter.tex"
+    cl_pdf_path = GEN_DIR / f"{safe_company_name}_cover_letter.pdf"
+    with open(cl_tex_path, "w", encoding="utf-8") as f:
+        f.write(cl_latex)
+    compile_latex_to_pdf(str(cl_tex_path))
+
+
     logger.info("Stage 8: Generating outreach connection sequences...")
     outreach = generate_outreach_sequence({"title": job.title, "company_name": job.company_name}, company_profile)
     outreach_path = GEN_DIR / f"{safe_company_name}_outreach.txt"
